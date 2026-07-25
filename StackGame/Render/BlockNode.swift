@@ -36,11 +36,18 @@ final class BlockNode: SKNode {
             addChild(face)
         }
 
-        // Faces are listed back-to-front. The sides share a silhouette edge with
-        // the top, so their order relative to each other does not matter, but
-        // both must sit behind it.
+        // Faces are listed back-to-front. leftFace and rightFace must NOT share a
+        // zPosition: the SpriteView is created with .ignoresSiblingOrder for
+        // performance, and Apple documents that under that option, sibling nodes
+        // with an identical zPosition get an undefined draw order. leftFace and
+        // rightFace share an edge (the block's near vertical edge), so a tied,
+        // unstable draw order there is exactly what produces a flickering seam
+        // gap along that edge — a small notch of background showing through
+        // right where the two faces meet. The epsilon is tiny enough (1000x
+        // smaller than the gap between adjacent tower levels) that it cannot
+        // affect ordering against any other block.
         leftFace.zPosition = 0
-        rightFace.zPosition = 0
+        rightFace.zPosition = 0.001
         topFace.zPosition = 1
 
         shadow.zPosition = -1
@@ -187,7 +194,14 @@ final class DebrisNode: SKNode {
             node.lineWidth = 0
             node.fillTexture = texture
             node.fillColor = MaterialLibrary.shade(material: material, face: face, light: light)
-            node.zPosition = face == .top ? 1 : 0
+            // Same tie as BlockNode's leftFace/rightFace — .left and .right must
+            // not share a zPosition under .ignoresSiblingOrder. See the comment
+            // there for why.
+            switch face {
+            case .top: node.zPosition = 1
+            case .left: node.zPosition = 0
+            case .right: node.zPosition = 0.001
+            }
             addChild(node)
         }
 
