@@ -11,9 +11,22 @@ import simd
 enum IsoProjection {
 
     /// Screen width of one world unit along a ground axis.
-    static let tileWidth: CGFloat = 210
+    ///
+    /// Bounded by the sweep, not by taste. A block's furthest screen extent is
+    /// `tileWidth * (travelAmplitude + 1) / 2`; with amplitude 1.35 that is
+    /// `tileWidth * 1.175`, which has to stay inside a phone's half-width —
+    /// ~187pt on a 375pt device. Hence 155.
+    ///
+    /// Letting the block leave the frame would be defensible with linear travel,
+    /// but the sweep is sinusoidal: it decelerates into the turnarounds, so an
+    /// oversized tile parks the block off-screen exactly where it moves slowest
+    /// and the player is left waiting on something they cannot see.
+    static let tileWidth: CGFloat = 155
     /// Screen height of one world unit of altitude.
-    static let heightScale: CGFloat = 150
+    ///
+    /// Held at ~0.71x `tileWidth` — that ratio is what makes the blocks read as
+    /// slabs rather than cubes.
+    static let heightScale: CGFloat = 111
 
     static func project(x: Double, y: Double, z: Double) -> CGPoint {
         CGPoint(

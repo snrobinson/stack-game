@@ -14,9 +14,17 @@ final class CameraController {
     private var shakeOffset = CGPoint.zero
     private var shakeMagnitude: CGFloat = 0
 
-    /// Keeps the build point a little below centre, leaving headroom for the
-    /// incoming block so the player can read its approach.
-    private let verticalBias: CGFloat = -120
+    /// Offset of the camera from the build point.
+    ///
+    /// The build point lands `-verticalBias` above screen centre, so a negative
+    /// value lifts it and leaves the space below for the tower to fill. (An
+    /// earlier comment here claimed this put the build point *below* centre —
+    /// it does the opposite; the behaviour is right and the description was
+    /// wrong.)
+    ///
+    /// Kept modest: at -120 a fresh run put the first block two-thirds of the
+    /// way up an otherwise empty frame.
+    private let verticalBias: CGFloat = -60
 
     private let baseScale: CGFloat
 

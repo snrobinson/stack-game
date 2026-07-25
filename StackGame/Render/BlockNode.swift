@@ -44,8 +44,13 @@ final class BlockNode: SKNode {
         topFace.zPosition = 1
 
         shadow.zPosition = -1
-        shadow.alpha = 0.30
-        shadow.blendMode = .multiply
+        // Deliberately not .multiply: the gradient's RGB is black everywhere and
+        // only its alpha fades out, but multiply blend ignores alpha and just
+        // multiplies RGB channel-by-channel — multiplying by black zeroes the
+        // destination out completely, rendering the sprite's full rectangular
+        // bounds as a solid black box instead of a soft-edged shadow. Default
+        // alpha blending respects the texture's alpha channel correctly.
+        shadow.alpha = 0.55
         addChild(shadow)
 
         rebuildGeometry()
