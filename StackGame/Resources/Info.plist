@@ -20,46 +20,31 @@
 	<string>$(MARKETING_VERSION)</string>
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
-
-	<!-- Portrait only. The tower composition assumes a tall frame. -->
-	<key>UISupportedInterfaceOrientations</key>
-	<array>
-		<string>UIInterfaceOrientationPortrait</string>
-	</array>
-
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
+	<key>NSUserTrackingUsageDescription</key>
+	<string>Allow tracking so the ads you see in Stack can be more relevant. The game plays exactly the same either way.</string>
+	<key>SKAdNetworkItems</key>
+	<array/>
 	<key>UILaunchScreen</key>
 	<dict>
 		<key>UIColorName</key>
 		<string>LaunchBackground</string>
 	</dict>
-
 	<key>UIRequiredDeviceCapabilities</key>
 	<array>
 		<string>armv7</string>
 		<string>metal</string>
 	</array>
-
-	<key>UIStatusBarHidden</key>
-	<true/>
-	<key>UIViewControllerBasedStatusBarAppearance</key>
-	<false/>
 	<key>UIRequiresFullScreen</key>
 	<true/>
-
-	<!-- Shown in the ATT prompt. Kept plain and honest; vague copy here is a
-	     common reason for a rejection. -->
-	<key>NSUserTrackingUsageDescription</key>
-	<string>Allow tracking so the ads you see in Stack can be more relevant. The game plays exactly the same either way.</string>
-
-	<!-- Declares the app uses no non-exempt encryption, so App Store Connect
-	     stops asking on every single upload. -->
-	<key>ITSAppUsesNonExemptEncryption</key>
+	<key>UIStatusBarHidden</key>
+	<true/>
+	<key>UISupportedInterfaceOrientations</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+	</array>
+	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<false/>
-
-	<!-- SKAdNetwork identifiers go here when an ad SDK is linked. AdMob
-	     publishes a current list; a stale or empty list silently costs
-	     attribution revenue. -->
-	<key>SKAdNetworkItems</key>
-	<array/>
 </dict>
 </plist>
