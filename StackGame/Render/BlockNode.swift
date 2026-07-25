@@ -16,7 +16,13 @@ final class BlockNode: SKNode {
 
     private(set) var footprint: Footprint
     private(set) var tier: MaterialTier
-    private let baseY: Double
+    /// Altitude of this block's underside.
+    ///
+    /// Mutable because the node representing the *moving* block is reused across
+    /// placements rather than rebuilt, and that block climbs a level every time
+    /// one lands. A block already in the tower never moves, but the preview
+    /// above it does nothing but.
+    private(set) var baseY: Double
 
     /// 0...1 emissive boost carried from the combo that placed this block. Decays
     /// so the glow trails off up the tower instead of banding hard.
@@ -70,12 +76,20 @@ final class BlockNode: SKNode {
 
     // MARK: - Geometry
 
-    /// Rebuild the paths. Only call when the footprint actually changed —
-    /// `CGPath` construction is the expensive part of drawing a block, and the
-    /// settled tower never needs it.
-    func update(footprint: Footprint) {
-        guard footprint != self.footprint else { return }
+    /// Move the block to a new footprint and altitude, rebuilding its paths.
+    ///
+    /// Both have to be passed, not just the footprint. This node is reused for
+    /// the moving block for as long as its material band lasts, and that block
+    /// gains a level on every placement — taking only the footprint here is what
+    /// left the preview sitting at the height it spawned at, sinking further
+    /// into the tower with every block that landed under it.
+    ///
+    /// Early-outs when nothing moved: `CGPath` construction is the expensive
+    /// part of drawing a block, and the settled tower never needs it.
+    func update(footprint: Footprint, baseY: Double) {
+        guard footprint != self.footprint || baseY != self.baseY else { return }
         self.footprint = footprint
+        self.baseY = baseY
         rebuildGeometry()
     }
 

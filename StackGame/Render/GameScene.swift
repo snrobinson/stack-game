@@ -141,7 +141,7 @@ final class GameScene: SKScene {
 
         // The engine widened the surviving block, so its node is stale.
         if let top = engine.topBlock, let node = blockNodes.last {
-            node.update(footprint: top.footprint)
+            node.update(footprint: top.footprint, baseY: top.baseY)
         }
         syncMovingNode()
         publishSnapshot()
@@ -341,16 +341,24 @@ final class GameScene: SKScene {
             return
         }
 
+        let baseY = Double(moving.level) * Tuning.blockHeight
+        let comboHeat = min(1.0, Double(engine.combo) / 8.0)
+
+        // The node survives from one placement to the next, so everything about
+        // it that the last drop changed has to be pushed in here — the level it
+        // now hovers at as much as the footprint it sweeps through. Only a
+        // change of material band is worth building a new node for.
         if let node = movingNode, node.tier == MaterialTier(level: moving.level) {
-            node.update(footprint: moving.footprint)
+            node.update(footprint: moving.footprint, baseY: baseY)
+            node.comboHeat = comboHeat
         } else {
             movingNode?.removeFromParent()
             let node = BlockNode(
                 footprint: moving.footprint,
-                baseY: Double(moving.level) * Tuning.blockHeight,
+                baseY: baseY,
                 tier: MaterialTier(level: moving.level)
             )
-            node.comboHeat = min(1.0, Double(engine.combo) / 8.0)
+            node.comboHeat = comboHeat
             effects.towerLayer.addChild(node)
             movingNode = node
         }
