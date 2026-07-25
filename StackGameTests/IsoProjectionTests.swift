@@ -95,6 +95,75 @@ final class IsoProjectionTests: XCTestCase {
         XCTAssertGreaterThan(high, low)
     }
 
+    func testNearerBlocksDrawInFront() {
+        // The camera is at (-x, +y, -z), so the near corner of the world is the
+        // one with the *smallest* x + z. A depth key that grew with x + z would
+        // sort the tower back to front.
+        let origin = IsoProjection.depth(x: 0, y: 0, z: 0)
+        XCTAssertGreaterThan(IsoProjection.depth(x: -1, y: 0, z: 0), origin)
+        XCTAssertGreaterThan(IsoProjection.depth(x: 0, y: 0, z: -1), origin)
+        XCTAssertLessThan(IsoProjection.depth(x: 1, y: 0, z: 0), origin)
+        XCTAssertLessThan(IsoProjection.depth(x: 0, y: 0, z: 1), origin)
+    }
+
+    func testDepthAgreesWithTheProjectionAboutWhatIsNear() {
+        // Tie the ordering to the projection rather than to a hand-picked sign:
+        // whichever of two ground points lands *lower* on screen is the one in
+        // front of the other, because screen-down is toward the camera here.
+        let originPoint = IsoProjection.project(x: 0, y: 0, z: 0)
+        let originDepth = IsoProjection.depth(x: 0, y: 0, z: 0)
+
+        for (x, z) in [(1.0, 0.0), (0.0, 1.0), (0.7, -0.3), (-1.35, 0.0)] {
+            let point = IsoProjection.project(x: x, y: 0, z: z)
+            let depth = IsoProjection.depth(x: x, y: 0, z: z)
+            XCTAssertEqual(
+                point.y < originPoint.y, depth > originDepth,
+                "(\(x), \(z)) sorts against the direction the projection puts it"
+            )
+        }
+    }
+
+    func testStackedBlockOutranksItsSupportAcrossTheWholeSweep() {
+        // The regression this file exists for. The sweeping block sits one level
+        // above the block it will land on, and the rules guarantee the two
+        // overlap, so it must draw in front at *every* point of its travel — not
+        // just on the half of the sweep that happens to move it away from the
+        // camera. Ranking by ground position alone let the foundation paint over
+        // it on the near half, which showed up as a notch bitten out of the
+        // moving block.
+        let support = IsoProjection.depth(x: 0, y: 0, z: 0)
+
+        for step in 0...64 {
+            let phase = Double(step) / 64 * 2 * .pi
+            let offset = Tuning.travelAmplitude * sin(phase)
+            let moving = IsoProjection.depth(x: offset, y: Tuning.blockHeight, z: 0)
+            XCTAssertGreaterThan(
+                moving, support,
+                "moving block at x offset \(offset) sorts behind the block below it"
+            )
+        }
+    }
+
+    func testEveryTowerLevelOutranksTheOneBelowIt() {
+        // Same invariant with the lean a long run accumulates, walked in the
+        // worst direction for the sort — away from the camera, where the ground
+        // term works against altitude on every single level. Placement
+        // alternates axes and adjacent levels can be offset by at most one block
+        // extent, since a placement that misses entirely ends the run.
+        var previous = -CGFloat.greatestFiniteMagnitude
+        var x = 0.0
+        var z = 0.0
+
+        for level in 0..<40 {
+            if level.isMultiple(of: 2) { x += 0.9 } else { z += 0.9 }
+            let depth = IsoProjection.depth(
+                x: x, y: Double(level) * Tuning.blockHeight, z: z
+            )
+            XCTAssertGreaterThan(depth, previous, "level \(level) sorts behind level \(level - 1)")
+            previous = depth
+        }
+    }
+
     func testShadowTracksFootprint() {
         let narrow = Footprint.centered(width: 0.3, depth: 0.3)
         let wide = Footprint.centered(width: 1.0, depth: 1.0)

@@ -57,62 +57,90 @@ enum MaterialLibrary {
     /// `(-x, +y, -z)` viewpoint.
     static let viewDirection = simd_normalize(SIMD3<Double>(-1, 1, -1))
 
+    /// Colour of the key light: warm, so a lit face skews golden.
+    static let keyLightColor = lumaNormalized(SIMD3(1.00, 0.93, 0.76))
+
+    /// Colour of the ambient fill — the sky bouncing back into the faces the key
+    /// light misses.
+    ///
+    /// Splitting the light into a warm key and a cool fill is what puts actual
+    /// *hue* into a block instead of three brightnesses of the same swatch. With
+    /// a white light the only difference between the top face and the shaded
+    /// side is exposure, which is exactly what makes an untinted palette read as
+    /// grey no matter how saturated the albedo is. With this split, the lit face
+    /// runs warm and the shaded face runs blue, and the block picks up colour it
+    /// never had in its albedo.
+    static let ambientColor = lumaNormalized(SIMD3(0.46, 0.60, 1.00))
+
+    /// Scale a light colour so its luminance is exactly 1.
+    ///
+    /// Keeps the tint knobs above orthogonal to exposure: retinting a light
+    /// moves hue only, and can never quietly brighten or darken every material
+    /// in the game at once.
+    private static func lumaNormalized(_ color: SIMD3<Double>) -> SIMD3<Double> {
+        let luma = simd_dot(color, SIMD3(0.2126, 0.7152, 0.0722))
+        return luma > 0 ? color / luma : color
+    }
+
     static func material(for tier: MaterialTier) -> Material {
         switch tier {
         case .concrete:
+            // Warm sandstone rather than grey cement. The sky starts blue-violet
+            // and the opening tower is the first thing anyone sees, so the
+            // foundation band is deliberately the complement of its backdrop.
             return Material(
-                albedo: SIMD3(0.72, 0.70, 0.66),
-                specularTint: SIMD3(1, 1, 1),
-                specularStrength: 0.05,
-                specularSharpness: 6,
-                ambient: 0.42,
+                albedo: SIMD3(0.90, 0.72, 0.50),
+                specularTint: SIMD3(1.00, 0.94, 0.82),
+                specularStrength: 0.12,
+                specularSharpness: 8,
+                ambient: 0.44,
                 alpha: 1.0,
                 detail: .noise,
-                emissiveResponse: 0.5
+                emissiveResponse: 0.6
             )
         case .marble:
             return Material(
-                albedo: SIMD3(0.94, 0.94, 0.96),
-                specularTint: SIMD3(1, 1, 1),
-                specularStrength: 0.55,
+                albedo: SIMD3(0.96, 0.90, 0.99),
+                specularTint: SIMD3(1.00, 0.96, 1.00),
+                specularStrength: 0.62,
                 specularSharpness: 48,
-                ambient: 0.46,
+                ambient: 0.48,
                 alpha: 1.0,
                 detail: .veins,
-                emissiveResponse: 0.8
+                emissiveResponse: 0.9
             )
         case .aluminum:
             return Material(
-                albedo: SIMD3(0.76, 0.78, 0.82),
-                specularTint: SIMD3(0.95, 0.97, 1.0),
-                specularStrength: 0.72,
+                albedo: SIMD3(0.60, 0.76, 0.94),
+                specularTint: SIMD3(0.86, 0.95, 1.00),
+                specularStrength: 0.80,
                 specularSharpness: 22,
-                ambient: 0.34,
+                ambient: 0.38,
                 alpha: 1.0,
                 detail: .brushed,
-                emissiveResponse: 1.0
+                emissiveResponse: 1.1
             )
         case .glass:
             return Material(
-                albedo: SIMD3(0.38, 0.54, 0.62),
-                specularTint: SIMD3(1, 1, 1),
-                specularStrength: 0.90,
+                albedo: SIMD3(0.18, 0.78, 0.80),
+                specularTint: SIMD3(0.80, 1.00, 1.00),
+                specularStrength: 0.95,
                 specularSharpness: 90,
-                ambient: 0.55,
+                ambient: 0.56,
                 alpha: 0.72,
                 detail: .frosted,
-                emissiveResponse: 1.3
+                emissiveResponse: 1.4
             )
         case .obsidian:
             return Material(
-                albedo: SIMD3(0.10, 0.10, 0.13),
-                specularTint: SIMD3(1.00, 0.82, 0.42),
+                albedo: SIMD3(0.16, 0.08, 0.26),
+                specularTint: SIMD3(1.00, 0.72, 0.30),
                 specularStrength: 1.0,
                 specularSharpness: 120,
-                ambient: 0.22,
+                ambient: 0.26,
                 alpha: 1.0,
                 detail: .glints,
-                emissiveResponse: 1.6
+                emissiveResponse: 1.7
             )
         }
     }
@@ -154,14 +182,18 @@ enum MaterialLibrary {
         let specular = pow(max(0, simd_dot(normal, half)), material.specularSharpness)
             * material.specularStrength
 
-        let lit = material.ambient + diffuse * (1 - material.ambient)
+        // Both light colours are luminance-normalised, so this carries the same
+        // total exposure the old scalar `ambient + diffuse * (1 - ambient)` did
+        // — it just spends it across three channels instead of one.
+        let lit = ambientColor * material.ambient
+            + keyLightColor * (diffuse * (1 - material.ambient))
         var rgb = material.albedo * lit + material.specularTint * specular
 
         // Combo glow: a long streak should visibly heat the tower up, not just
         // move a number on the HUD.
         if comboHeat > 0 {
-            let glow = comboHeat * material.emissiveResponse * 0.28
-            rgb += SIMD3(1.00, 0.72, 0.30) * glow
+            let glow = comboHeat * material.emissiveResponse * 0.34
+            rgb += SIMD3(1.00, 0.68, 0.24) * glow
         }
 
         // Near death drains the colour out of the world.
@@ -299,21 +331,45 @@ enum Palette {
         let progress = Double(height) / 120.0
         let hue = (0.62 + progress * 0.55).truncatingRemainder(dividingBy: 1.0)
 
+        // The two stops are pulled apart in hue as well as in brightness. A
+        // gradient between two shades of one colour is a backdrop; a gradient
+        // that travels is a sky.
+        //
+        // The bottom stop stays under ~0.7 brightness on purpose: the HUD's
+        // material band sits right on top of it, and white type on a fully
+        // saturated, fully bright field is where legibility goes.
         let top = UIColor(
             hue: CGFloat(hue),
-            saturation: 0.55,
-            brightness: 0.20,
+            saturation: 0.80,
+            brightness: 0.26,
             alpha: 1
         )
         let bottom = UIColor(
-            hue: CGFloat((hue + 0.08).truncatingRemainder(dividingBy: 1.0)),
-            saturation: 0.42,
-            brightness: 0.52,
+            hue: CGFloat((hue + 0.13).truncatingRemainder(dividingBy: 1.0)),
+            saturation: 0.76,
+            brightness: 0.68,
             alpha: 1
         )
         return (top, bottom)
     }
 
-    static let comboGlow = UIColor(red: 1.00, green: 0.76, blue: 0.34, alpha: 1)
-    static let perfectFlash = UIColor(red: 1.00, green: 0.94, blue: 0.78, alpha: 1)
+    static let comboGlow = UIColor(red: 1.00, green: 0.74, blue: 0.28, alpha: 1)
+    static let perfectFlash = UIColor(red: 1.00, green: 0.95, blue: 0.80, alpha: 1)
+
+    /// The colour a material band reads as, for the UI that names it.
+    ///
+    /// Derived from the tier's own albedo lifted to full brightness rather than
+    /// hand-picked per tier, so the chip in the HUD and the blocks on screen
+    /// cannot drift apart when a material is retuned.
+    static func tierTint(for tier: MaterialTier) -> UIColor {
+        let albedo = MaterialLibrary.material(for: tier).albedo
+        let peak = max(albedo.x, max(albedo.y, albedo.z))
+        let lifted = peak > 0 ? albedo / peak : albedo
+        return UIColor(
+            red: CGFloat(lifted.x),
+            green: CGFloat(lifted.y),
+            blue: CGFloat(lifted.z),
+            alpha: 1
+        )
+    }
 }
