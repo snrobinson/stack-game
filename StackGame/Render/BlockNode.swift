@@ -206,9 +206,12 @@ final class DebrisNode: SKNode {
         }
 
         position = centre
+        // Half a level in front of the block it was cut from, so the offcut
+        // always clears the block it is peeling away from without reaching the
+        // level above.
         zPosition = IsoProjection.depth(
             x: debris.footprint.centerX, y: baseY, z: debris.footprint.centerZ
-        ) + 0.5
+        ) + IsoProjection.depthPerLevel * 0.5
 
         run(fallAction(towardFarSide: debris.onFarSide))
     }

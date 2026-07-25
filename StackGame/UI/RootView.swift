@@ -1,5 +1,6 @@
 import SpriteKit
 import SwiftUI
+import UIKit
 
 /// Hosts the scene and layers whichever screen is current on top of it.
 ///
@@ -67,11 +68,15 @@ struct HUDView: View {
             Spacer()
 
             HStack(spacing: 10) {
+                // The one place the UI names a material is the one place it is
+                // allowed to borrow that material's colour — it turns the band
+                // you are in into something you can see at a glance rather than
+                // a word you have to read.
                 Text(snapshot.tier.displayName)
                     .font(Theme.label(11))
                     .tracking(2.4)
                     .textCase(.uppercase)
-                    .foregroundStyle(Theme.inkSecondary)
+                    .foregroundStyle(Color(Palette.tierTint(for: snapshot.tier)))
 
                 Text("·")
                     .foregroundStyle(Theme.inkTertiary)
@@ -92,6 +97,7 @@ struct HUDView: View {
             .panelBackground(cornerRadius: 18)
             .padding(.bottom, 28)
         }
+        .animation(.easeInOut(duration: 0.5), value: snapshot.tier)
         .animation(.spring(response: 0.3, dampingFraction: 0.7), value: snapshot.combo)
         .allowsHitTesting(false)
     }

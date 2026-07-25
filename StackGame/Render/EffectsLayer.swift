@@ -54,7 +54,11 @@ final class EffectsLayer: SKNode {
     func perfectBurst(at point: CGPoint, combo: Int, zPosition: CGFloat) {
         let ring = SKShapeNode(circleOfRadius: 12)
         ring.position = point
-        ring.zPosition = zPosition + 5
+        // A level and a half clear of the block that earned the burst, so the
+        // ring also reads over the next block, which spawns the moment this
+        // fires. Expressed in level units rather than raw z so it survives any
+        // future change to the depth scale.
+        ring.zPosition = zPosition + IsoProjection.depthPerLevel * 1.5
         ring.strokeColor = Palette.perfectFlash
         ring.lineWidth = 4
         ring.fillColor = .clear
@@ -71,11 +75,12 @@ final class EffectsLayer: SKNode {
         let sparks = SKEmitterNode()
         sparks.particleTexture = EffectsLayer.dotTexture
         sparks.position = point
-        // +5.5, not +5: tied with ring's zPosition would leave their draw order
-        // undefined under .ignoresSiblingOrder (see BlockNode's leftFace comment
-        // for the general issue). Lower stakes here since both are transient,
-        // but free to fix while touching this class of bug.
-        sparks.zPosition = zPosition + 5.5
+        // Nudged past the ring rather than tied with it: an identical zPosition
+        // would leave their draw order undefined under .ignoresSiblingOrder (see
+        // BlockNode's leftFace comment for the general issue). Lower stakes here
+        // since both are transient, but free to fix while touching this class of
+        // bug.
+        sparks.zPosition = zPosition + IsoProjection.depthPerLevel * 1.55
         sparks.particleBirthRate = 900
         sparks.numParticlesToEmit = 14 + min(combo, 8) * 3
         sparks.particleLifetime = 0.55
@@ -101,7 +106,7 @@ final class EffectsLayer: SKNode {
         let dust = SKEmitterNode()
         dust.particleTexture = EffectsLayer.dotTexture
         dust.position = point
-        dust.zPosition = zPosition + 4
+        dust.zPosition = zPosition + IsoProjection.depthPerLevel * 1.2
         dust.particleBirthRate = 400
         dust.numParticlesToEmit = 18
         dust.particleLifetime = 0.9

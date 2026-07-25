@@ -7,6 +7,11 @@ import SwiftUI
 /// one accent colour — the gold from the obsidian tier — carries every moment
 /// that matters. One accent used sparingly reads as expensive; three read as a
 /// toy.
+///
+/// The single exception is the material band, which the HUD tints with
+/// `Palette.tierTint`. That is not a second accent: it is the tower's own colour
+/// quoted back, on the one label that names it, and it changes only when the
+/// tower does.
 enum Theme {
 
     static let accent = Color(red: 1.00, green: 0.76, blue: 0.34)

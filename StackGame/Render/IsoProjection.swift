@@ -123,8 +123,36 @@ enum IsoProjection {
         )
     }
 
+    /// How far one world unit of altitude outweighs one world unit of ground
+    /// distance when sorting.
+    ///
+    /// Altitude has to win outright, not merely count for more. Every block in
+    /// the tower rests on the block below it and is guaranteed by the rules to
+    /// overlap it, so the higher block is *always* the one nearer the camera
+    /// along any ray that hits both — there is no configuration where a
+    /// supporting block should draw over the block it supports. One tower level
+    /// is only `blockHeight` (0.2) of altitude, while the sweeping block ranges
+    /// over `±travelAmplitude` (1.35) on the ground, so an unweighted sum lets a
+    /// horizontal offset outvote a whole level. This weight makes one level
+    /// worth 20 units of ordering against a ground spread that never exceeds
+    /// about 5.4, which puts the two terms firmly in separate registers.
+    static let altitudeWeight: Double = 100
+
+    /// Draw-order distance between two adjacent tower levels.
+    ///
+    /// Anything that wants to sit in front of a specific block — debris, a
+    /// perfect burst — should offset by a fraction of this rather than by a bare
+    /// number, so it stays correctly placed relative to the levels around it.
+    static let depthPerLevel = CGFloat(Tuning.blockHeight * altitudeWeight)
+
     /// Draw order key. Larger draws in front.
+    ///
+    /// The projection puts the camera in the `(-x, +y, -z)` octant, so *smaller*
+    /// `x + z` is nearer the viewer — hence the subtraction. Getting that sign
+    /// wrong is not a subtle shading artefact: it makes the foundation paint
+    /// over the block sweeping toward the camera, which reads as a notch bitten
+    /// out of the moving block.
     static func depth(x: Double, y: Double, z: Double) -> CGFloat {
-        CGFloat(x + z + y * 2)
+        CGFloat(y * altitudeWeight - (x + z))
     }
 }
