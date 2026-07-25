@@ -1,0 +1,51 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Fast gate. Runs the rules verification without needing a Mac runner, so a
+  # broken gameplay rule fails in under a minute rather than after a full build.
+  engine-rules:
+    name: Engine rules (Node)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Verify engine rules and difficulty tuning
+        run: node Tools/engine-harness/verify.mjs
+
+  core-package:
+    name: StackGameCore (swift test)
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test the pure engine
+        working-directory: Packages/StackGameCore
+        run: swift test
+
+  app:
+    name: App build and test
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install XcodeGen
+        run: brew install xcodegen
+      - name: Generate project
+        run: xcodegen generate
+      - name: Build and test
+        run: |
+          xcodebuild test \
+            -project StackGame.xcodeproj \
+            -scheme StackGame \
+            -destination 'platform=iOS Simulator,name=iPhone 16,OS=latest' \
+            CODE_SIGNING_ALLOWED=NO \
+            | xcpretty && exit ${PIPESTATUS[0]}

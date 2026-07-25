@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+	Privacy manifest. Required — a missing or incomplete manifest is an
+	automatic App Store rejection, not a warning.
+
+	This file describes the app AS IT STANDS: no ad SDK is linked, so nothing is
+	collected and nothing is tracked.
+
+	WHEN YOU ADD ADMOB, THIS FILE MUST CHANGE:
+	  1. NSPrivacyTracking -> true
+	  2. Add the ad network domains to NSPrivacyTrackingDomains
+	  3. Add NSPrivacyCollectedDataTypes entries for Device ID / Advertising Data
+	Shipping ads against this manifest as written would be a false declaration.
+-->
+<plist version="1.0">
+<dict>
+	<key>NSPrivacyTracking</key>
+	<false/>
+
+	<key>NSPrivacyTrackingDomains</key>
+	<array/>
+
+	<key>NSPrivacyCollectedDataTypes</key>
+	<array/>
+
+	<key>NSPrivacyAccessedAPITypes</key>
+	<array>
+		<dict>
+			<!-- PersistenceStore keeps high scores, settings, and the remove-ads
+			     flag in UserDefaults. CA92.1 = access limited to this app. -->
+			<key>NSPrivacyAccessedAPIType</key>
+			<string>NSPrivacyAccessedAPICategoryUserDefaults</string>
+			<key>NSPrivacyAccessedAPITypeReasons</key>
+			<array>
+				<string>CA92.1</string>
+			</array>
+		</dict>
+	</array>
+</dict>
+</plist>
