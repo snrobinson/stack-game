@@ -71,7 +71,11 @@ final class EffectsLayer: SKNode {
         let sparks = SKEmitterNode()
         sparks.particleTexture = EffectsLayer.dotTexture
         sparks.position = point
-        sparks.zPosition = zPosition + 5
+        // +5.5, not +5: tied with ring's zPosition would leave their draw order
+        // undefined under .ignoresSiblingOrder (see BlockNode's leftFace comment
+        // for the general issue). Lower stakes here since both are transient,
+        // but free to fix while touching this class of bug.
+        sparks.zPosition = zPosition + 5.5
         sparks.particleBirthRate = 900
         sparks.numParticlesToEmit = 14 + min(combo, 8) * 3
         sparks.particleLifetime = 0.55
